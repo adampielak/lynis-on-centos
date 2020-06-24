@@ -1,0 +1,8 @@
+---
+ansible_python_interpreter: /usr/bin/python3
+banner_text_file: file-banner-text.txt
+password_max_days: 90
+password_min_days: 1
+sha_crypt_max_rounds: 10000
+sha_crypt_min_rounds: 5000
+ssh_user: centos
