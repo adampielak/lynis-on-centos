@@ -1,0 +1,34 @@
+---
+- hosts: all
+  become: yes
+  gather_facts: false
+  ignore_errors: yes
+
+
+  tasks:
+
+      - name: remove old report
+        file:
+          path: /home/centos/centos7-report.html
+          state: absent
+
+      - name: remove old fixes
+        file:
+          path: /home/centos/centos7-fixes.html
+          state: absent
+
+      - name: Run oscap evaluation
+        command: oscap xccdf eval --fetch-remote-resources --profile standard --report centos7-report.html --results centos7-results.xml /usr/share/xml/scap/ssg/content/ssg-centos7-xccdf.xml
+
+      - name: Run oscap fix
+        command: oscap xccdf generate fix --fetch-remote-resources --fix-type ansible --profile standard --output playbook-centos7-fixes.yml /usr/share/xml/scap/ssg/content/ssg-centos7-xccdf.xml
+
+      - name: Fetch oscap report
+        fetch:
+          src: /home/centos/centos7-report.html
+          dest: /tmp/fetched
+
+      - name: Fetch oscap fixes
+        fetch:
+          src: /home/centos/playbook-centos7-fixes.yml
+          dest: /tmp/fetched
