@@ -17,3 +17,18 @@ data "aws_ami" "centos" {
       values = ["ebs"]
   }
 }
+
+data "template_file" "tf_ansible_vars_file" {
+    template = "${file("./tr_ansible_vars_file.yml.tpl")}"
+    vars = {
+        ansible_python_interpreter = var.ansible_python_interpreter
+        banner_text_file = var.banner_text_file
+        centos_user_password = random_password.centos_user_password.result
+        password_max_days = var.password_max_days
+        password_min_days = var.password_min_days
+        timestamp = "${timestamp()}"
+        sha_crypt_max_rounds = var.sha_crypt_max_rounds
+        sha_crypt_min_rounds = var.sha_crypt_min_rounds
+        ssh_user = var.ssh_user
+    }
+}

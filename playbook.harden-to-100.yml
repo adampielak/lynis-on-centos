@@ -3,8 +3,11 @@
   gather_facts: false
   become: yes
 
+  handlers:
+    - import_tasks: ansible_handlers.yml
+
   vars_files:
-    - external_vars.yml
+    - tf_ansible_vars_file.yml
 
   tasks:
 
@@ -83,7 +86,7 @@
       tags:
         - AUTH-9328
 
-    # NIST recommends setting the daemon umask to 027 
+    # NIST recommends setting the daemon umask to 027
     # (REHL5: http://nvd.nist.gov/scap/content/stylesheet/scap-rhel5-document.htm).
     #
     - name: AUTH-9328 - does /etc/init.d/functions exist?
@@ -97,7 +100,7 @@
         state: present
         regexp: "^umask 022"
         line: "umask 027"
-      when: auth9328.stat.exists      
+      when: auth9328.stat.exists
       tags:
         - AUTH-9328
 
@@ -127,7 +130,7 @@
     # .##.....##.#########.##..####.##..####.##.......##...##..
     # .##.....##.##.....##.##...###.##...###.##.......##....##.
     # .########..##.....##.##....##.##....##.########.##.....##
-    
+
     # This task should fail if the banner text file is not found.
     - set_fact:
         banner_text: "{{lookup('file', banner_text_file) }}"
@@ -143,7 +146,9 @@
         path: /etc/ssh/sshd_config
         state: present
         regexp: "^#?Banner"
+        validate: sshd -tf %s
         line: "Banner /etc/banner.message.txt"
+      notify: restart sshd
 
     - name: Banner restart sshd
       systemd:
@@ -210,7 +215,7 @@
         - name: FILE-6344 proc mount - get group id
           shell: getent group monitor | cut -d':' -f3
           register: monitor_group_register
-        
+
         - debug:
             var: monitor_group_register.stdout
 
@@ -243,7 +248,7 @@
 
     #
     # Some pages on the Internet suggested to use "blacklist <filesystem>"
-    # instead of the "/bin/true" approach. Empirical testing shows that 
+    # instead of the "/bin/true" approach. Empirical testing shows that
     # the approach below works. At least as far as Lynis is concerned.
     #
     - name: FILE-6430 (Disable mounting of some filesystems)
@@ -288,6 +293,7 @@
         state: present
         regexp: "^#?ProcessSizeMax"
         line: "ProcessSizeMax=0"
+      notify: restart sshd
       tags:
         - KRNL-5820
 
@@ -297,6 +303,7 @@
         state: present
         regexp: "^#?Storage"
         line: "Storage=none"
+      notify: restart sshd
       tags:
         - KRNL-5820
 
@@ -306,6 +313,7 @@
         content: |
           ulimit -c 0
         mode: 644
+      notify: restart sshd
       tags:
         - KRNL-5820
 
@@ -316,12 +324,13 @@
           #<domain> <type> <item> <value>
           *         hard   core   0
         mode: 644
+      notify: restart sshd
       tags:
         - KRNL-5820
 
     #
     # net.ipv6.conf.default.accept_redirects and net.ipv4.conf.all.forwarding are not being set.
-    # 
+    #
     - name: KRNL-6000 (Check sysctl key pairs in scan profile)
       copy:
         dest: /etc/sysctl.d/90-lynis.conf
@@ -444,7 +453,7 @@
       tags:
         ACCT-9622
 
-    # Checking for audit rules is beyond the scope of this 
+    # Checking for audit rules is beyond the scope of this
     # project.
     #
     - name: Skip ACCT-9630 (Check for auditd rules)
@@ -497,8 +506,8 @@
       tags:
         HRDN-7230
 
-    # Checking for external logging is beyond the scope of this 
-    # project. There are simply too many ways to enable this 
+    # Checking for external logging is beyond the scope of this
+    # project. There are simply too many ways to enable this
     # feature.
     #
     - name: Skip LOGG-2154 (Checking syslog configuration file)
@@ -510,7 +519,7 @@
       tags:
         LOGG-2154
 
-    # Checking for anti-virus software is beyond the scope of this 
+    # Checking for anti-virus software is beyond the scope of this
     # project.
     #
     - name: Skip MALW-3280 (Check if anti-virus tool is installed)
@@ -532,8 +541,8 @@
         - PKGS-7420
 
     #
-    # SSH-7408 checks to see if the server runs SSH on something other 
-    # than 22 (the default port). 
+    # SSH-7408 checks to see if the server runs SSH on something other
+    # than 22 (the default port).
     #
     # Changing the port is a bit complex in an automated provision.
     #  - switch to terraform to generate custom security group.
@@ -568,6 +577,8 @@
         state: present
         regexp: "^#?AllowAgentForwarding"
         line: "AllowAgentForwarding no"
+        validate: sshd -tf %s
+      notify: restart sshd
       tags:
         - SSH-7408
 
@@ -577,6 +588,8 @@
         state: present
         regexp: "^#?AllowTcpForwarding"
         line: "AllowTcpForwarding no"
+        validate: sshd -tf %s
+      notify: restart sshd
       tags:
         - SSH-7408
 
@@ -586,6 +599,8 @@
         state: present
         regexp: "^#?ClientAliveCountMax"
         line: "ClientAliveCountMax 2"
+        validate: sshd -tf %s
+      notify: restart sshd
       tags:
         - SSH-7408
 
@@ -595,15 +610,19 @@
         state: present
         regexp: "^#?Compression"
         line: "Compression no"
+        validate: sshd -tf %s
+      notify: restart sshd
       tags:
         - SSH-7408
-        
+
     - name: SSH-7408 - hardening SSH configuration - INFO
       lineinfile:
         path: /etc/ssh/sshd_config
         state: present
         regexp: "^#?LogLevel"
         line: "LogLevel VERBOSE"
+        validate: sshd -tf %s
+      notify: restart sshd
       tags:
         - SSH-7408
 
@@ -613,6 +632,8 @@
         state: present
         regexp: "^#?MaxAuthTries"
         line: "MaxAuthTries 3"
+        validate: sshd -tf %s
+      notify: restart sshd
       tags:
         - SSH-7408
 
@@ -622,6 +643,8 @@
         state: present
         regexp: "^#?MaxSessions"
         line: "MaxSessions 2"
+        validate: sshd -tf %s
+      notify: restart sshd
       tags:
         - SSH-7408
 
@@ -631,6 +654,8 @@
         state: present
         regexp: "^#?PermitRootLogin"
         line: "PermitRootLogin no"
+        validate: sshd -tf %s
+      notify: restart sshd
       tags:
         - SSH-7408
 
@@ -640,6 +665,8 @@
     #     state: present
     #     regexp: "^#?Port"
     #     line: "Port {{ ssh_port }}"
+    #     validate: sshd -tf %s
+    #   notify: restart sshd
     #   tags:
     #     - SSH-7408
 
@@ -649,6 +676,8 @@
         state: present
         regexp: "^#?TCPKeepAlive"
         line: "TCPKeepAlive no"
+        validate: sshd -tf %s
+      notify: restart sshd
       tags:
         - SSH-7408
 
@@ -658,6 +687,8 @@
         state: present
         regexp: "^#?UseDNS"
         line: "UseDNS no"
+        validate: sshd -tf %s
+      notify: restart sshd
       tags:
         - SSH-7408
 
@@ -667,6 +698,8 @@
         state: present
         regexp: "^#?X11Forwarding"
         line: "X11Forwarding no"
+        validate: sshd -tf %s
+      notify: restart sshd
       tags:
         - SSH-7408
 
@@ -676,6 +709,8 @@
         state: present
         regexp: "^#?AllowUsers"
         line: "AllowUsers {{ ssh_user }}"
+        validate: sshd -tf %s
+      notify: restart sshd
       tags:
         - SSH-7440
 
@@ -709,14 +744,14 @@
       copy:
         dest: /etc/fail2ban/jail.local
         content: |
-          [DEFAULT] 
+          [DEFAULT]
           bantime  = 1800
           findtime  = 300
           maxretry = 3
           banaction = iptables-multiport
           backend = systemd
 
-          [sshd] 
+          [sshd]
           enabled = true
       tags:
         - TOOL-5104
@@ -765,7 +800,7 @@
     # .##.....##.########.########...#######...#######.....##...
 
     #
-    # Lots of changes were made. Let's reboot to make sure 
+    # Lots of changes were made. Let's reboot to make sure
     # everything takes effect.
     #
 

@@ -1,0 +1,81 @@
+---
+- hosts: all
+  gather_facts: false
+  become: yes
+
+  handlers:
+    - import_tasks: ansible_handlers.yml
+
+  vars_files:
+    - tf_ansible_vars_file.yml
+
+  tasks:
+
+    - name: upgrade all packages
+      yum:
+        name: '*'
+        state: latest
+      vars:
+        ansible_python_interpreter: /usr/bin/python
+
+    #
+    # The python3-dnf package is not being found. So I am using yum 
+    # instead of dnf.
+    #
+    - name: install packages with python2
+      yum:
+        name:
+          - epel-release
+        state: latest
+        update_cache: yes
+      vars:
+        ansible_python_interpreter: /usr/bin/python
+
+    - name: install python selinux bindings so that copy task will work.
+      yum:
+        name:
+          - libselinux-python3
+        state: latest
+        update_cache: yes
+      vars:
+        ansible_python_interpreter: /usr/bin/python
+
+    - name: Create Lynis Yum repository file.
+      copy:
+        dest: /etc/yum.repos.d/lynis.repo
+        content: |
+          [lynis]
+          name=CISOfy Software - Lynis package
+          baseurl=https://packages.cisofy.com/community/lynis/rpm/
+          enabled=1
+          gpgkey=https://packages.cisofy.com/keys/cisofy-software-rpms-public.key
+          gpgcheck=1
+          priority=2
+        mode: "644"
+
+    - name: install packages with python2
+      yum:
+        name:
+          - aide
+          - ca-certificates
+          - curl
+          - fail2ban
+          - lynis
+          - nss
+          - openssl
+          - python2-jmespath
+          - usbguard
+        state: latest
+        update_cache: yes
+      vars:
+        ansible_python_interpreter: /usr/bin/python
+
+    - name: set password for 'centos' user.
+      user:
+        name: centos
+        password: "{{ centos_user_password | password_hash('sha512') }}"
+
+    - name: delete no password sudo configuration
+      file:
+        path: /etc/sudoers.d/90-cloud-init-users
+        state: absent

@@ -123,6 +123,8 @@ We'll used the `MAC-1_Classified` profile.
 
 ## Run Evaluation
 
+The DISA files are not too useful. They don't check anything.
+
 ```bash
 sudo oscap xccdf eval \
 		--fetch-remote-resources \
@@ -134,6 +136,8 @@ sudo oscap xccdf eval \
 
 ## Generate Fix
 
+The DISA files are not too useful. They run just a few checks.
+
 ```bash
 oscap xccdf generate fix \
 		--fetch-remote-resources \
@@ -143,35 +147,19 @@ oscap xccdf generate fix \
 		/home/centos/U_RHEL_7_V2R7_Manual_STIG/U_RHEL_7_STIG_V2R7_Manual-xccdf.xml
 ```
 
-oscap xccdf generate fix \
-  --result-id xccdf_org.open-scap_testresult_stig-rhel6-server \
-	rhel64-scap.brunell.lab-ssg-results.xml > fix.sh
-
 After the evaluation is complete, look at rhel7-report.html.
-
-## Miscellaneous
-
-oscap xccdf generate guide \
-   --profile MAC-1_Classified \
-    --output stig-guide.html \
-    U_General_Purpose_Operating_System_V1R6_Manual_SRG/U_General_Purpose_Operating_System_SRG_V1R6_Manual-xccdf.xml
-
-## Notchecked
-
-That means that either
-
-    XCCDF file does not specify any check for that particular rule
-    OVAL file was not found
-    particular id was not found in the OVAL file
-    our oval interpreter cannot evaluate given rule
-    There may be element in your xccdf-results.xml specifying which is the case.
-
 
 ## Remediate
 
+Note that I have not done this. Proceed with caution.
+
+```
 oscap xccdf eval --remediate --profile stig-rhel7-disa --results scan-sccdf-results.xml /usr/share/xml/scap/ssg/content/ssg-rhel7-ds.xml
+```
 
 ## OVAL
+
+I don't understand much about OVAL yet.
 
 ```
 sudo oscap oval eval \

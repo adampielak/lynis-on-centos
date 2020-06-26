@@ -1,0 +1,7 @@
+---
+  - name: restart sshd
+    service: name=sshd state=restarted
+    listen: restart sshd
+  - name: Unconditionally reboot the machine
+    reboot:
+    listen: reboot system

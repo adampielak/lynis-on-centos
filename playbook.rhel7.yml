@@ -15,11 +15,14 @@
     - debug:
         var: ansible_python_interpreter
 
-    - name: Banner point to banner file
-      lineinfile:
-        path: /etc/ssh/sshd_config
+
+    - name: RHEL-07-02190 | Address space randomization
+      sysctl:
+        name: kernel.randomize_va_space
+        value: "2"
         state: present
-        regexp: "^#?Banner"
-        validate: sshd -tf %s
-        line: "Banner /etc/banner.message.txt"
-      notify: restart sshd
+        reload: yes
+        ignoreerrors: yes
+      notify: reboot system
+      tags:
+        RHEL-07-02190

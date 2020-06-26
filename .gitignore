@@ -1,10 +1,12 @@
 .terraform
 inventory
 ip_address.txt
+.terraform.tfstate.lock.info
+terraform.plan
 terraform.tfstate
 terraform.tfstate.backup
 variables.tf
 venv
 *.pem
 *.pub
-external_vars.yml
+tf_ansible_vars_file.yml

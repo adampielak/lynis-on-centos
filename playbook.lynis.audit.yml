@@ -3,8 +3,11 @@
   become: yes
   gather_facts: false
 
+  handlers:
+    - import_tasks: ansible_handlers.yml
+
   vars_files:
-    - external_vars.yml
+    - tf_ansible_vars_file.yml
 
   #
   # This playbook runs the lynis audit process on the remote server.
