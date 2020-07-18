@@ -3,9 +3,6 @@
   gather_facts: false
   become: yes
 
-  handlers:
-    - import_tasks: ansible_handlers.yml
-
   vars_files:
     - tf_ansible_vars_file.yml
 
@@ -75,7 +72,12 @@
         name: centos
         password: "{{ centos_user_password | password_hash('sha512') }}"
 
-    - name: delete no password sudo configuration
-      file:
-        path: /etc/sudoers.d/90-cloud-init-users
-        state: absent
+    #
+    # The last task is commented out for convenience while
+    # testing.
+    #
+
+    # - name: delete no password sudo configuration
+    #   file:
+    #     path: /etc/sudoers.d/90-cloud-init-users
+    #     state: absent

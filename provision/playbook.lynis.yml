@@ -4,16 +4,16 @@
   become: yes
 
   handlers:
-    - import_tasks: ansible_handlers.yml
 
-  vars_files:
-    - tf_ansible_vars_file.yml
+    - name: restart sshd
+      service: name=sshd state=restarted
+      listen: restart sshd
+
+    - name: Unconditionally reboot the machine
+      reboot:
+      listen: reboot system
 
   tasks:
-
-    # A harmless task to as placeholder.
-    - debug:
-        var: ansible_python_interpreter
 
     # ....###....##.....##.########.##.....##
     # ...##.##...##.....##....##....##.....##
@@ -41,24 +41,6 @@
         line: "SHA_CRYPT_MAX_ROUNDS 10000"
       tags:
         - AUTH-9230
-
-    - name: AUTH-9286 - PASS_MAX_DAYS - Checking user password aging
-      lineinfile:
-        path: /etc/login.defs
-        state: present
-        regexp: "^PASS_MAX_DAYS"
-        line: "PASS_MAX_DAYS 90"
-      tags:
-        - AUTH-9286
-
-    - name: AUTH-9286 - PASS_MIN_DAYS - Checking user password aging
-      lineinfile:
-        path: /etc/login.defs
-        state: present
-        regexp: "^PASS_MIN_DAYS"
-        line: "PASS_MIN_DAYS 1"
-      tags:
-        - AUTH-9286
 
     - name: AUTH-9328 - Default umask values
       lineinfile:
@@ -121,59 +103,6 @@
         line: "FAIL_DELAY 4"
       tags:
         - "https://www.lisenet.com/2017/centos-7-server-hardening-guide/"
-
-
-    # .########.....###....##....##.##....##.########.########.
-    # .##.....##...##.##...###...##.###...##.##.......##.....##
-    # .##.....##..##...##..####..##.####..##.##.......##.....##
-    # .########..##.....##.##.##.##.##.##.##.######...########.
-    # .##.....##.#########.##..####.##..####.##.......##...##..
-    # .##.....##.##.....##.##...###.##...###.##.......##....##.
-    # .########..##.....##.##....##.##....##.########.##.....##
-
-    # This task should fail if the banner text file is not found.
-    - set_fact:
-        banner_text: "{{lookup('file', banner_text_file) }}"
-
-    - name: Banner create banner file
-      copy:
-        dest: /etc/banner.message.txt
-        content: "{{ banner_text }}\n"
-        mode: "644"
-
-    - name: Banner point to banner file
-      lineinfile:
-        path: /etc/ssh/sshd_config
-        state: present
-        regexp: "^#?Banner"
-        validate: sshd -tf %s
-        line: "Banner /etc/banner.message.txt"
-      notify: restart sshd
-
-    - name: Banner restart sshd
-      systemd:
-        name: sshd
-        state: restarted
-
-    - name: Delete issue files.
-      file:
-        path: "{{ item }}"
-        state: absent
-      with_items:
-        - /etc/issue
-        - /etc/issue.net
-
-    - name: Link banner to /etc/issue
-      file:
-        src: /etc/banner.message.txt
-        dest: /etc/issue
-        state: link
-
-    - name: Link banner to /etc/issue.net
-      file:
-        src: /etc/banner.message.txt
-        dest: /etc/issue.net
-        state: link
 
 
     # .########.####.##.......########
@@ -348,9 +277,9 @@
           net.ipv4.conf.default.log_martians=1
           net.ipv6.conf.all.accept_redirects=0
           net.ipv6.conf.default.accept_redirects=0
+      notify: reboot system
       tags:
         KRNL-6000
-
 
     # ..######..##.....##.########.##.......##......
     # .##....##.##.....##.##.......##.......##......
@@ -359,17 +288,6 @@
     # .......##.##.....##.##.......##.......##......
     # .##....##.##.....##.##.......##.......##......
     # ..######..##.....##.########.########.########
-
-    - name: SHLL-6220 (Idle session killing tools or settings)
-      copy:
-        dest: /etc/profile.d/SHLL-6220.sh
-        content: |
-          TMOUT=300
-          readonly TMOUT
-          export TMOUT
-        mode: "644"
-      tags:
-        - SHLL-6220
 
     - name: SHLL-6230 umask check - /etc/bashrc 002
       lineinfile:
@@ -425,7 +343,6 @@
       tags:
         - SHLL-6230
 
-
     # ..######..##....##.####.########.....########.########..######..########..######.
     # .##....##.##...##...##..##.....##.......##....##.......##....##....##....##....##
     # .##.......##..##....##..##.....##.......##....##.......##..........##....##......
@@ -441,29 +358,17 @@
         remote_src: true
 
     #
-    # FCOS does not have a /var/account directory. However,
-    # we do load the audit package which tracks user actions.
+    # Changing how and where directories are mounted is beyond the scope of this
+    # project. Ideally /tmp, /home, and /var should be on separate drives.
     #
-    - name: Skip ACCT-9622 (Check for available Linux accounting information)
+    - name: Skip FILE-6310 (Checking /tmp, /home and /var directory)
       lineinfile:
         path: /etc/lynis/custom.prf
         state: present
-        regexp: "^skip-test=ACCT-9622"
-        line: "skip-test=ACCT-9622"
+        regexp: "^skip-test=FILE-6310"
+        line: "skip-test=FILE-6310"
       tags:
-        ACCT-9622
-
-    # Checking for audit rules is beyond the scope of this
-    # project.
-    #
-    - name: Skip ACCT-9630 (Check for auditd rules)
-      lineinfile:
-        path: /etc/lynis/custom.prf
-        state: present
-        regexp: "^skip-test=ACCT-9630"
-        line: "skip-test=ACCT-9630"
-      tags:
-        ACCT-9630
+        FILE-6310
 
     # IPTABLES are beyond the scope of this project. I believe include
     # defense in depth. However,
@@ -479,19 +384,6 @@
         line: "skip-test=FIRE-4508"
       tags:
         FIRE-4508
-
-    #
-    # Changing how and where directories are mounted is beyond the scope of this
-    # project. Ideally /tmp, /home, and /var should be on separate drives.
-    #
-    - name: Skip FILE-6310 (Checking /tmp, /home and /var directory)
-      lineinfile:
-        path: /etc/lynis/custom.prf
-        state: present
-        regexp: "^skip-test=FILE-6310"
-        line: "skip-test=FILE-6310"
-      tags:
-        FILE-6310
 
     #
     # malware scans are too environment specific for a generic
@@ -540,28 +432,6 @@
       tags:
         - PKGS-7420
 
-    #
-    # SSH-7408 checks to see if the server runs SSH on something other
-    # than 22 (the default port).
-    #
-    # Changing the port is a bit complex in an automated provision.
-    #  - switch to terraform to generate custom security group.
-    #  - connect via 22:
-    #      - change the port number in /etc/ssh/sshd_config.
-    #      - semanage port -a -t ssh_port_t -p tcp 15762
-    #      - sudo systemctl restart sshd
-    #  - change ansible and other scripts to use the new port number.
-    #
-    # All of that work is possible but should not be done on a whim.
-    #
-    - name: Skip SSH-7408 SSH non-default port
-      lineinfile:
-        path: /etc/lynis/custom.prf
-        state: present
-        regexp: "^skip-test=SSH-7408:Port"
-        line: "skip-test=SSH-7408:Port"
-      tags:
-        - SSH-7408
 
     # ..######...######..##.....##
     # .##....##.##....##.##.....##

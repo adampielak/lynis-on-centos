@@ -18,7 +18,7 @@ resource "aws_key_pair" "centos" {
 }
 
 resource "aws_instance" "centos" {
-  ami           = data.aws_ami.centos.id
+  ami           = data.aws_ami.distro.id
   associate_public_ip_address = "true"
   instance_type = var.instance_type
   key_name      = aws_key_pair.centos.key_name

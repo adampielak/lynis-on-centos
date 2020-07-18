@@ -3,23 +3,18 @@
   gather_facts: false
   become: yes
 
-  handlers:
-    - import_tasks: ansible_handlers.yml
+  # handlers:
+  #   - import_tasks: ansible_handlers.yml
+  #
+  # vars_files:
+  #   - tf_ansible_vars_file.yml
+  #
 
-  vars_files:
-    - tf_ansible_vars_file.yml
+  vars:
+    password: password
 
   tasks:
 
     # A harmless task to as placeholder.
     - debug:
-        var: ansible_python_interpreter
-
-    - name: Banner point to banner file
-      lineinfile:
-        path: /etc/ssh/sshd_config
-        state: present
-        regexp: "^#?Banner"
-        validate: sshd -tf %s
-        line: "Banner /etc/banner.message.txt"
-      notify: restart sshd
+        var: "{{ password | password_hash('sha512') }}"

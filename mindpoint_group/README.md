@@ -3,7 +3,7 @@
 ```bash
 cd /data/projects
 git clone https://github.com/MindPointGroup/RHEL7-STIG.git
-cd RHEL7-STIG
+cd /data/projects/RHEL7-STIG
 
 ```
 
@@ -12,13 +12,6 @@ cd RHEL7-STIG
 ```bash
 pip install jmespath
 ```
-
-My first run added a password requirement for sudo but the `centos` user does not have a password.
-
-/etc/sudoers
-/etc/sudoers.d/90-cloud-init-users
-
-
 
 cat <<EOF > inventory
 [all]

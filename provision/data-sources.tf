@@ -1,22 +1,37 @@
-data "aws_ami" "centos" {
+data "aws_ami" "distro" {
   owners      = ["679593333241"]
   most_recent = true
-
   filter {
       name   = "name"
       values = ["CentOS Linux 7 x86_64 HVM EBS *"]
   }
-
   filter {
       name   = "architecture"
       values = ["x86_64"]
   }
-
   filter {
       name   = "root-device-type"
       values = ["ebs"]
   }
 }
+
+# data "aws_ami" "distro" {
+#   most_recent = true
+
+#   filter {
+#     name = "name"
+
+#     values = ["ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server*"]
+#   }
+
+#   filter {
+#     name = "virtualization-type"
+
+#     values = ["hvm"]
+#   }
+
+#   owners = ["099720109477"]
+# }
 
 data "template_file" "tf_ansible_vars_file" {
     template = "${file("./tr_ansible_vars_file.yml.tpl")}"
